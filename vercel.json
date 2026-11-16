@@ -1,0 +1,1 @@
+{"functions":{"api/check.mjs":{"maxDuration":60,"memory":1024}},"rewrites":[{"destination":"/api/check?landing=1","source":"/"},{"destination":"/api/check","source":"/agent"},{"destination":"/api/check","source":"/api/check"}]}
