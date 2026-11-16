@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReceiptGuard — proof-checked payment release agent</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1a1a2e; }
+  h1 { margin-bottom: .2rem; } .sub { color: #555; margin-top: 0; }
+  label { display: block; margin: .5rem 0 .15rem; font-weight: 600; font-size: .9rem; }
+  input { width: 100%; padding: .45rem; box-sizing: border-box; }
+  button { margin-top: 1rem; padding: .6rem 1.2rem; font-weight: 700; cursor: pointer; }
+  pre { background: #0d1117; color: #c9d1d9; padding: 1rem; overflow-x: auto; font-size: .78rem; }
+  .ok { color: #0a7d33; font-weight: 700; } .bad { color: #b00020; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>ReceiptGuard 🧾</h1>
+<p class="sub">A proof-checked payment release agent — a Wildcard entry for the zkVerify Agent Games, by @aripin98.</p>
+
+<h2>The problem</h2>
+<p>Small teams, DAOs, grant programs and marketplaces release payments and reimbursements on trust: someone checks a claim by eye and clicks pay. That is slow, inconsistent, and impossible to audit afterwards — when a payment is disputed, there is no evidence the release rules were actually followed. ReceiptGuard replaces the eyeball with a deterministic agent whose every decision carries a zero-knowledge proof that the rules were applied exactly as written.</p>
+
+<h2>Try it live</h2>
+<p>Submit a claim. The agent approves or rejects it with a reason code, generates a real Groth16 proof of the decision with the official gatekeeper circuit, and verifies that proof before answering. Try changing the amount above the cap, the balance below the minimum, or the expiry — the proof still verifies, because it proves the <em>rejection</em> too.</p>
+
+<form id="f">
+  <label>Claim ID <input name="claim_id" value="demo-claim-1"></label>
+  <label>Recipient <input name="recipient" value="0x1111111111111111111111111111111111111111"></label>
+  <label>Expected recipient (from the approved receipt) <input name="expected_recipient" value="0x1111111111111111111111111111111111111111"></label>
+  <label>Amount <input name="amount" value="500"></label>
+  <label>Cap (max amount) <input name="max_amount" value="1000"></label>
+  <label>Available balance <input name="balance" value="1460"></label>
+  <label>Minimum balance required <input name="minimum" value="1000"></label>
+  <label>Expiry block <input name="expiry_block" value="19842201"></label>
+  <label>Current block <input name="current_block" value="19832000"></label>
+  <label>Proof / receipt reference <input name="proof_ref" value="receipt-001"></label>
+  <button type="submit">Check claim</button>
+</form>
+<p id="verdict"></p>
+<pre id="out">Result will appear here…</pre>
+
+<h2>How it works</h2>
+<p>The release policy is deterministic and fail-closed: balance must meet the minimum, the claim must not be expired, the recipient must match the approved receipt, and the amount must be within the cap — checked in exactly that order, with the same boundary conditions the circuit enforces. The decision bit and the claim fields become the public signals of a Groth16 proof; anyone can verify, with the circuit's verification key, that the stated decision is the only one the rules allow for those fields — without seeing the private salt. See the README in the repository for the full build context.</p>
+
+<script>
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target).entries());
+  const verdict = document.getElementById('verdict');
+  const out = document.getElementById('out');
+  verdict.textContent = 'Checking + proving… (about a second)';
+  out.textContent = '';
+  try {
+    const res = await fetch('/agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const j = await res.json();
+    verdict.innerHTML = j.decision === 'APPROVE'
+      ? '<span class="ok">APPROVE</span> — ' + j.reason_code + ' · proof verified: ' + j.verified
+      : '<span class="bad">' + (j.decision || 'ERROR') + '</span> — ' + (j.reason_code || j.error || '') + ' · proof verified: ' + j.verified;
+    out.textContent = JSON.stringify(j, null, 2);
+  } catch (err) {
+    verdict.innerHTML = '<span class="bad">Request failed</span>';
+    out.textContent = String(err);
+  }
+});
+</script>
+</body>
+</html>
