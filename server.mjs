@@ -69,7 +69,12 @@ export function handleRequest(req, res) {
 
 export const server = http.createServer(handleRequest);
 
-if (process.env.RECEIPTGUARD_NO_LISTEN !== "1") {
+// Vercel's Node preset may load this file directly as the function entry:
+// a default export keeps it valid there, and the listen below is skipped
+// in any serverless environment (VERCEL is set by the platform).
+export default handleRequest;
+
+if (process.env.RECEIPTGUARD_NO_LISTEN !== "1" && !process.env.VERCEL) {
   ensureReady()
     .then(() => server.listen(PORT, () => console.log(`receiptguard listening on :${PORT} (GET /, POST /agent, POST /api/check)`)))
     .catch((e) => { console.error(`FATAL: startup failed: ${e.message}`); process.exit(1); });

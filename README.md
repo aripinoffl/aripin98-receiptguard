@@ -84,7 +84,7 @@ Tests cover: server startup + health, the landing page, a valid claim → `APPRO
 ## Live endpoint
 
 > **Placeholder — filled in at deployment.**
-> Public endpoint: `https://<receiptguard-deployment>.vercel.app`
+> Public endpoint: `https://aripin98-receiptguard.vercel.app`
 > Repository: `https://github.com/aripinoffl/<receiptguard-repo>`
 
 ## Layout
